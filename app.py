@@ -685,7 +685,7 @@ with gr.Blocks(css=custom_css) as demo:
                         interactive=False,
                         elem_classes="terminal-console"
                     )
-                    local_score_output = gr.Number(label="Neural Vision Score (%)", precision=2, interactive=False, visible=True)
+                    local_score_output = gr.Number(label="DeepScan Neural AI Probability (%)", precision=2, interactive=False, visible=True)
                     api_score_output = gr.Number(label="Sightengine Premium Score (%)", precision=2, interactive=False, visible=True)
 
         # Helper UI Updaters
