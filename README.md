@@ -1,8 +1,8 @@
 ---
 title: DeepScan Video Detector
 emoji: 🎥
-colorFrom: slate
-colorTo: emerald
+colorFrom: gray
+colorTo: green
 sdk: gradio
 app_file: app.py
 pinned: false
