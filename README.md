@@ -4,7 +4,6 @@ emoji: 🎥
 colorFrom: gray
 colorTo: green
 sdk: gradio
-gradio_version: 5.16.0
 app_file: app.py
 pinned: false
 ---
