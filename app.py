@@ -779,12 +779,32 @@ with gr.Blocks(css=custom_css) as demo:
             ]
         )
 
-        # Register a client-side listener to receive login_success postMessage from popup and reload locally
+        # Register a client-side listener to receive login_success from popup (via BroadcastChannel, LocalStorage, or postMessage) and reload locally
         demo.load(
             fn=None,
             inputs=[],
             outputs=[],
             js="""() => {
+                // 1. BroadcastChannel method
+                try {
+                    const bc = new BroadcastChannel("auth_channel");
+                    bc.onmessage = (event) => {
+                        if (event.data === "login_success") {
+                            window.location.reload();
+                        }
+                    };
+                } catch (e) {
+                    console.error("BroadcastChannel listener registration failed:", e);
+                }
+
+                // 2. LocalStorage storage event fallback
+                window.addEventListener("storage", (event) => {
+                    if (event.key === "login_success") {
+                        window.location.reload();
+                    }
+                });
+
+                // 3. postMessage event listener fallback
                 window.addEventListener("message", (event) => {
                     if (event.data === "login_success") {
                         window.location.reload();
@@ -986,19 +1006,35 @@ def google_callback(request: Request, response: Response, code: str = None, mock
         <div>[AUTHENTICATION SUCCESSFUL]</div>
         <div style="font-size: 0.8rem; margin-top: 10px; color: #64748b;">REDIRECTING BACK TO PORTAL...</div>
         <script>
+            // 1. Send signal via BroadcastChannel
+            try {
+                const bc = new BroadcastChannel("auth_channel");
+                bc.postMessage("login_success");
+                bc.close();
+            } catch (e) {
+                console.error("BroadcastChannel postMessage failed:", e);
+            }
+
+            // 2. Send signal via LocalStorage storage event fallback
+            try {
+                localStorage.setItem("login_success", Date.now().toString());
+            } catch (e) {
+                console.error("LocalStorage write failed:", e);
+            }
+
+            // 3. Fallback to postMessage (if window.opener is still alive)
             try {
                 if (window.opener) {
                     window.opener.postMessage("login_success", "*");
-                } else {
-                    window.location.href = "/";
                 }
             } catch (e) {
                 console.error("Opener postMessage failed:", e);
-                window.location.href = "/";
             }
+
+            // 4. Close the popup
             setTimeout(() => {
                 window.close();
-            }, 500);
+            }, 800);
         </script>
     </body>
     </html>
