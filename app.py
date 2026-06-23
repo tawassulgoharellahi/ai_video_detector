@@ -833,8 +833,10 @@ def login_google(request: Request):
     
     redirect_uri = os.environ.get("GOOGLE_REDIRECT_URI")
     if not redirect_uri:
-        host = request.headers.get("host", "localhost:7860")
-        proto = "https" if request.headers.get("x-forwarded-proto") == "https" else "http"
+        host = request.headers.get("x-forwarded-host")
+        if not host:
+            host = request.headers.get("host", "localhost:7860")
+        proto = request.headers.get("x-forwarded-proto", request.url.scheme)
         redirect_uri = f"{proto}://{host}/login/google/callback"
     
     if not client_id or not client_secret:
@@ -866,8 +868,10 @@ def google_callback(request: Request, response: Response, code: str = None, mock
         client_secret = os.environ.get("GOOGLE_CLIENT_SECRET")
         redirect_uri = os.environ.get("GOOGLE_REDIRECT_URI")
         if not redirect_uri:
-            host = request.headers.get("host", "localhost:7860")
-            proto = "https" if request.headers.get("x-forwarded-proto") == "https" else "http"
+            host = request.headers.get("x-forwarded-host")
+            if not host:
+                host = request.headers.get("host", "localhost:7860")
+            proto = request.headers.get("x-forwarded-proto", request.url.scheme)
             redirect_uri = f"{proto}://{host}/login/google/callback"
         
         try:
