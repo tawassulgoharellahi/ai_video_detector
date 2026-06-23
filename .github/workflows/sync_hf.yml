@@ -18,8 +18,30 @@ jobs:
           fetch-depth: 0
           lfs: true
 
+      - name: Configure Git
+        run: |
+          git config --global user.email "action@github.com"
+          git config --global user.name "GitHub Action"
+
+      - name: Prepend HF Frontmatter to README.md
+        run: |
+          cat << 'EOF' > temp_readme
+          ---
+          title: DeepScan Video Detector
+          colorFrom: gray
+          colorTo: green
+          sdk: docker
+          app_file: app.py
+          pinned: false
+          ---
+          EOF
+          cat README.md >> temp_readme
+          mv temp_readme README.md
+          git add README.md
+          git commit -m "Add Hugging Face metadata [skip ci]" --allow-empty
+
       - name: Push to HF
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          git push -f https://tawassulgohar:$HF_TOKEN@huggingface.co/spaces/tawassulgohar/ai_video_detector main
+          git push -f https://tawassulgohar:$HF_TOKEN@huggingface.co/spaces/tawassulgohar/ai_video_detector HEAD:main

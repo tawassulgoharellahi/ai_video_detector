@@ -1,72 +1,102 @@
----
-title: DeepScan Video Detector
-emoji: 🎥
-colorFrom: gray
-colorTo: green
-sdk: docker
-app_file: app.py
-pinned: false
----
+# DeepScan AI Video Detector
 
-# DeepScan AI: 4-Layer Video Detector
+An intelligent, multi-layered video deepfake and generative AI detection system. The tool is styled as a retro-modern monospace developer terminal console, enabling frame-by-frame mathematical anomaly inspection, local deep learning model execution, and fallback to advanced commercial APIs.
 
-An intelligent, multi-layered video deepfake and AI generation detector. The tool is styled as a retro-modern monospace developer terminal console, enabling you to inspect frame-by-frame mathematical anomalies, run local deep learning models, and fallback to advanced commercial APIs—all while keeping hosting and execution cost-free.
+## About the Project
 
----
+DeepScan AI is designed to detect manipulated video content (face swaps, lip-syncs, and full generative AI synthesis). By combining low-level computer vision math, frequency domain analysis, deep learning classifiers, and optional enterprise APIs, it provides a high-confidence ensemble classification of media authenticity.
 
-## 🏗️ Core Architecture & Features
-1. **Layer 1: Temporal Motion Flow & SSIM Math (Local)**: Computes frame-to-frame pixel displacements (dense optical flow) and structural similarity index (SSIM) over 12 uniformly sampled frames. Automatically adjusts to the video’s resolution and action levels to reduce false alarms.
-2. **Layer 2: Adaptive Frequency Domain FFT (Local)**: Measures high-frequency noise loss patterns typical of GAN and Diffusion models. Resolution-independent and normalized to resist compression artifacts.
-3. **Layer 3: Local Face Crop Classifier (Local)**: Employs a face tracker (**MediaPipe**) to extract faces, passing crops to a pre-trained **EfficientNet-B4** model. If pre-trained weights cannot be loaded locally, a fallback visual edge-frequency classification module is activated.
-4. **Layer 4: Sightengine Premium API (Optional)**: Leverages Sightengine's enterprise video analysis backend for state-of-the-art text-to-video generators. Uses backend credentials so users do not need to provide their own keys.
-5. **Daily Quotas & User Accounts**: A local SQLite database manages accounts with strict rate-limiting:
-   - Max **5 total scans per day** per account.
-   - Max **2 premium API scans per day** per account.
-6. **Video Length Boundary**: Rejects videos longer than **12.0 seconds** immediately without costing quota.
-7. **Automated API Fallback**: If the API call fails or the developer key is exhausted, it prints a warning to the terminal logs and shifts to local models automatically to complete the scan.
-8. **Adaptive UI Locking**: Once the user hits their 2 premium scans limit, the premium API checkbox is automatically disabled and Standard check is locked on.
+## System Architecture and Pipeline
 
----
+The detection pipeline consists of four distinct analysis layers, executing sequentially based on the user's configurations and session quotas.
 
-## 🚀 Installation & Local Run
+### Pipeline Flow
 
-### 1. Install Dependencies
-Make sure you have Python 3.8+ installed. Install the requirements:
-```bash
-pip install -r requirements.txt
+```mermaid
+graph TD
+    A[Upload Video] --> B{Duration Check}
+    B -- "> 12s" --> C[Rejection Error]
+    B -- "<= 12s" --> D[Extract 12 sampled frames]
+    
+    D --> E[Check Scan Quotas]
+    E -- "Limit Hit" --> F[Rejection Error]
+    E -- "Quota Available" --> G{Scan Type Selected}
+    
+    G -- "Premium API" --> H[Layer 4: Sightengine Motion API]
+    H -- "Success" --> I[Deduct Premium Quota]
+    H -- "Fail / Key Exhausted" --> J[Fallback to Standard]
+    
+    G -- "Standard" --> K[Standard Local Pipeline]
+    J --> K
+    
+    K --> L1[Layer 1: Temporal Motion Flow & SSIM Math]
+    K --> L2[Layer 2: Adaptive Frequency FFT Scan]
+    K --> L3[Layer 3: Local Face Crop Classifier]
+    
+    L1 & L2 & L3 --> M[Compute Ensembled Probability]
+    M --> N[Deduct Standard Quota]
+    I & N --> O[Display Verdict on Portal Console]
 ```
 
-### 2. Configure Sightengine API Credentials (Optional)
-To enable Layer 4 (Sightengine Premium), export your developer credentials as environment variables:
+### The 4 Analysis Layers
 
-On macOS/Linux:
-```bash
-export SIGHTENGINE_API_USER="your_api_user_id"
-export SIGHTENGINE_API_SECRET="your_api_secret_key"
-```
+#### 1. Layer 1: Temporal Motion Flow & SSIM Math (Local)
+Computes frame-to-frame pixel displacements using dense optical flow (Farneback algorithm) and Structural Similarity Index (SSIM) over 12 uniformly sampled frames. Generative models and deepfakes often introduce sudden temporal inconsistencies or warping artifacts, which this layer flags by measuring spikes in motion vector variance and drops in structural correlation.
 
-On Windows (Command Prompt):
-```cmd
-set SIGHTENGINE_API_USER=your_api_user_id
-set SIGHTENGINE_API_SECRET=your_api_secret_key
-```
+#### 2. Layer 2: Adaptive Frequency Domain FFT (Local)
+Applies a 2D Fast Fourier Transform (FFT) on frame channels to analyze the frequency spectrum. Generative AI models (such as GANs and Diffusion networks) tend to leave subtle checkerboard patterns or high-frequency noise loss during upsampling. This layer calculates the ratio of high-frequency power to low-frequency power, normalizing the metric to resist compression artifacts.
 
-On Windows (PowerShell):
-```powershell
-$env:SIGHTENGINE_API_USER="your_api_user_id"
-$env:SIGHTENGINE_API_SECRET="your_api_secret_key"
-```
+#### 3. Layer 3: Local Face Crop Classifier (Local)
+Uses a face detection framework (MediaPipe) to track and extract human faces across frames. The cropped face regions are passed to a local vision classifier (using EfficientNet-B4 architecture) to detect blending boundaries, unnatural eye blinking, or texture mismatches. If local GPU/CPU resources are constrained, a fallback visual edge-frequency classifier is engaged.
 
-*Note: If these variables are not set, the app will execute the Standard pipeline. Selecting the Premium checkbox without setting these variables will output a credentials warning and fallback to local models.*
+#### 4. Layer 4: Sightengine Premium API (Optional Cloud Fallback)
+Leverages Sightengine's enterprise video analysis backend for state-of-the-art generative video detection. This cloud integration checks for motion abnormalities and model signatures from advanced generators like Sora, Kling, Runway, and Luma.
 
-### 3. Launch App
-Run the web application locally:
+---
+
+## Technical Specifications and Setup
+
+### Prerequisites
+* Python 3.9 or higher
+* SQLite 3
+* Git
+
+### Installation
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/tawassulgoharellahi/ai_video_detector.git
+   cd ai_video_detector
+   ```
+
+2. Install dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+3. Configure Environment Variables:
+   Create a `.env` file in the root directory and add the following keys:
+   ```env
+   SIGHTENGINE_API_USER=your_sightengine_user_id
+   SIGHTENGINE_API_SECRET=your_sightengine_secret_key
+   GOOGLE_CLIENT_ID=your_google_oauth_client_id
+   GOOGLE_CLIENT_SECRET=your_google_oauth_client_secret
+   ```
+
+### Database Schema
+An SQLite database (`users.db`) is automatically initialized at startup. It maintains the following tables:
+* **users**: Stores registered operator accounts, credentials, and OAuth provider IDs.
+* **scans**: Logs the type of scan executed (standard/premium) and timestamps to enforce daily limits.
+* **sessions**: Manages active operator login tokens and expiration schedules.
+
+### Rate Limits
+* **Maximum Video Duration**: 12 seconds.
+* **Daily Total Scan Quota**: 5 scans per user.
+* **Daily Premium Scan Quota**: 2 scans per user.
+
+### Launching the Application
+Run the following command to start the local server:
 ```bash
 python app.py
 ```
-Open the printed URL (usually `http://127.0.0.1:7860`) in your browser to access the portal.
-
----
-
-## 💾 User Database
-User sessions and scans are tracked in `users.db` inside the project folder. To reset all operator accounts and quotas, simply delete `users.db` and restart the application.
+Open `http://localhost:7860` in your web browser to access the portal interface.
