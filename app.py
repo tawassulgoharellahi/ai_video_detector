@@ -25,6 +25,13 @@ if os.path.exists(".env"):
                 key, val = line.split("=", 1)
                 os.environ[key.strip()] = val.strip().strip('"').strip("'")
 
+# Sanitize environment variables to strip hidden spaces/line-separators
+for env_key in ["GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", "GOOGLE_REDIRECT_URI", "SIGHTENGINE_API_USER", "SIGHTENGINE_API_SECRET"]:
+    env_val = os.environ.get(env_key)
+    if env_val:
+        os.environ[env_key] = env_val.strip().replace('\u2028', '').replace('\u2029', '')
+
+
 
 # ==========================================
 # 1. DATABASE MANAGEMENT (SQLite)
