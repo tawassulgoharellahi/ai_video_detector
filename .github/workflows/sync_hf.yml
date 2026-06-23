@@ -8,6 +8,9 @@ on:
 jobs:
   sync-to-hub:
     runs-on: ubuntu-latest
+    environment:
+      name: Hugging Face Spaces
+      url: https://huggingface.co/spaces/tawassulgohar/ai_video_detector
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
