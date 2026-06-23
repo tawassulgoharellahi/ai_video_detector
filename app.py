@@ -785,10 +785,6 @@ with gr.Blocks(css=custom_css) as demo:
             inputs=[],
             outputs=[],
             js="""() => {
-                // Skip if already logged in (app_panel visible)
-                const authPanel = document.querySelector('#auth_panel');
-                const isLoggedIn = authPanel && authPanel.style.display === 'none';
-
                 // 1. BroadcastChannel method
                 try {
                     const bc = new BroadcastChannel("auth_channel");
@@ -819,21 +815,22 @@ with gr.Blocks(css=custom_css) as demo:
                 });
 
                 // 4. Cookie polling fallback — works even in sandboxed iframes
-                // Poll every 1.5s to check if the session cookie was set by the popup
-                if (!isLoggedIn) {
+                // Only poll if no cookie exists yet (user not logged in)
+                const hadCookieAtLoad = document.cookie.split(';').some(c => c.trim().startsWith('operator_session='));
+                if (!hadCookieAtLoad) {
                     const pollId = setInterval(() => {
                         const hasCookie = document.cookie.split(';').some(c => c.trim().startsWith('operator_session='));
                         let hasFlag = false;
                         try { hasFlag = localStorage.getItem('login_success') !== null; } catch(e) {}
                         if (hasCookie || hasFlag) {
-                            console.log("[AUTH] Cookie/flag detected via polling, reloading...");
+                            console.log("[AUTH] New cookie/flag detected via polling, reloading...");
                             clearInterval(pollId);
                             try { localStorage.removeItem('login_success'); } catch(e) {}
                             window.location.reload();
                         }
                     }, 1500);
 
-                    // Stop polling after 10 minutes to avoid unnecessary overhead
+                    // Stop polling after 10 minutes
                     setTimeout(() => clearInterval(pollId), 600000);
                 }
             }"""
