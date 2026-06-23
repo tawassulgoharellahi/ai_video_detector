@@ -639,7 +639,7 @@ with gr.Blocks(css=custom_css) as demo:
             outputs=None,
             js="""(token) => {
                 if (token) {
-                    document.cookie = "operator_session=" + token + "; path=/; max-age=86400; SameSite=Lax";
+                    document.cookie = "operator_session=" + token + "; path=/; max-age=86400; SameSite=None; Secure";
                 }
             }"""
         )
@@ -783,7 +783,7 @@ with gr.Blocks(css=custom_css) as demo:
             fn=None,
             inputs=[],
             outputs=[],
-            js="() => { window.top.location.href = window.location.origin + '/login/google'; }"
+            js="() => { window.open(window.location.origin + '/login/google', 'Google Login', 'width=600,height=700'); }"
         )
         
         
@@ -792,7 +792,7 @@ with gr.Blocks(css=custom_css) as demo:
             inputs=[],
             outputs=[auth_panel, app_panel, session_user_id, session_username, welcome_message, quota_status, session_token_box],
             js="""() => {
-                document.cookie = "operator_session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
+                document.cookie = "operator_session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; SameSite=None; Secure";
             }"""
         )
 
@@ -828,7 +828,7 @@ with gr.Blocks(css=custom_css) as demo:
 
 # Create FastAPI wrapper
 from fastapi import FastAPI, Response, Request
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, HTMLResponse
 import uvicorn
 
 app = FastAPI()
@@ -938,9 +938,68 @@ def google_callback(request: Request, response: Response, code: str = None, mock
     # Create session
     session_token = create_session(user_id)
     
-    redirect_response = RedirectResponse(url="/")
-    redirect_response.set_cookie(key="operator_session", value=session_token, max_age=86400, path="/")
-    return redirect_response
+    html_content = """
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Login Successful</title>
+        <style>
+            body {
+                background-color: #020617;
+                color: #22c55e;
+                font-family: 'Courier New', Courier, monospace;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                height: 100vh;
+                margin: 0;
+            }
+            .spinner {
+                border: 4px solid rgba(34, 197, 94, 0.1);
+                width: 36px;
+                height: 36px;
+                border-radius: 50%;
+                border-left-color: #22c55e;
+                animation: spin 1s linear infinite;
+                margin-bottom: 20px;
+            }
+            @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        </style>
+    </head>
+    <body>
+        <div class="spinner"></div>
+        <div>[AUTHENTICATION SUCCESSFUL]</div>
+        <div style="font-size: 0.8rem; margin-top: 10px; color: #64748b;">REDIRECTING BACK TO PORTAL...</div>
+        <script>
+            try {
+                if (window.opener) {
+                    window.opener.location.reload();
+                } else {
+                    window.location.href = "/";
+                }
+            } catch (e) {
+                console.error("Opener reload failed:", e);
+                window.location.href = "/";
+            }
+            setTimeout(() => {
+                window.close();
+            }, 500);
+        </script>
+    </body>
+    </html>
+    """
+    response = HTMLResponse(content=html_content, status_code=200)
+    response.set_cookie(
+        key="operator_session",
+        value=session_token,
+        max_age=86400,
+        path="/",
+        httponly=False,
+        samesite="none",
+        secure=True
+    )
+    return response
 
 # Mount Gradio UI
 app = gr.mount_gradio_app(app, demo, path="/")
