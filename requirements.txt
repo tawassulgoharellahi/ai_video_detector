@@ -9,4 +9,4 @@ numpy<2
 pillow
 requests
 bcrypt
-transformers<4.40
+transformers
