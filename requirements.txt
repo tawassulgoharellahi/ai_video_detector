@@ -1,0 +1,12 @@
+gradio>=5.0.0,<6.0.0
+opencv-python-headless
+torch
+torchvision
+timm
+mediapipe
+scikit-image
+numpy<2
+pillow
+requests
+bcrypt
+transformers<4.40
