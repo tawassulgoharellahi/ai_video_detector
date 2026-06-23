@@ -3,7 +3,7 @@ title: DeepScan Video Detector
 emoji: 🎥
 colorFrom: gray
 colorTo: green
-sdk: fastapi
+sdk: docker
 app_file: app.py
 pinned: false
 ---
