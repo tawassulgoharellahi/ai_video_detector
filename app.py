@@ -779,17 +779,22 @@ with gr.Blocks(css=custom_css) as demo:
             ]
         )
 
-        # Register a client-side listener to receive login_success from popup (via BroadcastChannel, LocalStorage, or postMessage) and reload locally
+        # Register client-side listeners + polling to detect login_success from popup
         demo.load(
             fn=None,
             inputs=[],
             outputs=[],
             js="""() => {
+                // Skip if already logged in (app_panel visible)
+                const authPanel = document.querySelector('#auth_panel');
+                const isLoggedIn = authPanel && authPanel.style.display === 'none';
+
                 // 1. BroadcastChannel method
                 try {
                     const bc = new BroadcastChannel("auth_channel");
                     bc.onmessage = (event) => {
                         if (event.data === "login_success") {
+                            console.log("[AUTH] BroadcastChannel signal received");
                             window.location.reload();
                         }
                     };
@@ -800,6 +805,7 @@ with gr.Blocks(css=custom_css) as demo:
                 // 2. LocalStorage storage event fallback
                 window.addEventListener("storage", (event) => {
                     if (event.key === "login_success") {
+                        console.log("[AUTH] LocalStorage signal received");
                         window.location.reload();
                     }
                 });
@@ -807,9 +813,29 @@ with gr.Blocks(css=custom_css) as demo:
                 // 3. postMessage event listener fallback
                 window.addEventListener("message", (event) => {
                     if (event.data === "login_success") {
+                        console.log("[AUTH] postMessage signal received");
                         window.location.reload();
                     }
                 });
+
+                // 4. Cookie polling fallback — works even in sandboxed iframes
+                // Poll every 1.5s to check if the session cookie was set by the popup
+                if (!isLoggedIn) {
+                    const pollId = setInterval(() => {
+                        const hasCookie = document.cookie.split(';').some(c => c.trim().startsWith('operator_session='));
+                        let hasFlag = false;
+                        try { hasFlag = localStorage.getItem('login_success') !== null; } catch(e) {}
+                        if (hasCookie || hasFlag) {
+                            console.log("[AUTH] Cookie/flag detected via polling, reloading...");
+                            clearInterval(pollId);
+                            try { localStorage.removeItem('login_success'); } catch(e) {}
+                            window.location.reload();
+                        }
+                    }, 1500);
+
+                    // Stop polling after 10 minutes to avoid unnecessary overhead
+                    setTimeout(() => clearInterval(pollId), 600000);
+                }
             }"""
         )
 
