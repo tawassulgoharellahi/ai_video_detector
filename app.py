@@ -779,6 +779,20 @@ with gr.Blocks(css=custom_css) as demo:
             ]
         )
 
+        # Register a client-side listener to receive login_success postMessage from popup and reload locally
+        demo.load(
+            fn=None,
+            inputs=[],
+            outputs=[],
+            js="""() => {
+                window.addEventListener("message", (event) => {
+                    if (event.data === "login_success") {
+                        window.location.reload();
+                    }
+                });
+            }"""
+        )
+
         google_login_btn.click(
             fn=None,
             inputs=[],
@@ -974,12 +988,12 @@ def google_callback(request: Request, response: Response, code: str = None, mock
         <script>
             try {
                 if (window.opener) {
-                    window.opener.location.reload();
+                    window.opener.postMessage("login_success", "*");
                 } else {
                     window.location.href = "/";
                 }
             } catch (e) {
-                console.error("Opener reload failed:", e);
+                console.error("Opener postMessage failed:", e);
                 window.location.href = "/";
             }
             setTimeout(() => {
