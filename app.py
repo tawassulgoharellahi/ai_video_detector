@@ -776,7 +776,7 @@ with gr.Blocks(css=custom_css) as demo:
             fn=None,
             inputs=[],
             outputs=[],
-            js="() => { window.location.href = '/login/google'; }"
+            js="() => { window.top.location.href = window.location.origin + '/login/google'; }"
         )
         
         
