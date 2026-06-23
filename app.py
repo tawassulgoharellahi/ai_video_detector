@@ -556,12 +556,12 @@ def execute_pipeline(video_path, run_standard, run_premium, user_id, detection_m
     if actual_run_standard:
         local_final_score = (l1_score * 0.15) + (l2_score * 0.05) + (l3_score * 0.80)
         local_ret = round(local_final_score * 100, 2)
-        console += f"   - Local System AI Probability: {local_final_score * 100:.2f}%\n"
-        console += f"   - Local System Real Probability: {(1 - local_final_score) * 100:.2f}%\n"
+        console += f"   - DeepScan Neural AI Probability: {local_final_score * 100:.2f}%\n"
+        console += f"   - DeepScan Neural Authenticity Score: {(1 - local_final_score) * 100:.2f}%\n"
         if local_final_score > 0.5:
-            console += "   🚨 LOCAL SYSTEM VERDICT: AI-GENERATED / DEEPFAKE DETECTED\n"
+            console += "   🚨 NEURAL VERDICT: AI-GENERATED / DEEPFAKE DETECTED\n"
         else:
-            console += "   ✅ LOCAL SYSTEM VERDICT: AUTHENTIC REAL VIDEO\n"
+            console += "   ✅ NEURAL VERDICT: AUTHENTIC REAL VIDEO\n"
             
     # Sightengine Premium Verdict
     if l4_score is not None:
@@ -672,7 +672,7 @@ with gr.Blocks(css=custom_css) as demo:
                         value="Combined Hybrid Ensemble (Averages both)",
                         elem_classes="terminal-input"
                      )
-                    cb_standard = gr.Checkbox(label="Standard Math & Local AI Pipeline", value=True, interactive=True)
+                    cb_standard = gr.Checkbox(label="Spectral + Vision Neural Pipeline", value=True, interactive=True)
                     cb_premium = gr.Checkbox(label="Sightengine Premium (API)", value=False, interactive=True)
                     
                     scan_btn = gr.Button("EXECUTE DETECTOR SCAN", variant="primary")
@@ -685,7 +685,7 @@ with gr.Blocks(css=custom_css) as demo:
                         interactive=False,
                         elem_classes="terminal-console"
                     )
-                    local_score_output = gr.Number(label="Local System AI Score (%)", precision=2, interactive=False, visible=True)
+                    local_score_output = gr.Number(label="Neural Vision Score (%)", precision=2, interactive=False, visible=True)
                     api_score_output = gr.Number(label="Sightengine Premium Score (%)", precision=2, interactive=False, visible=True)
 
         # Helper UI Updaters
